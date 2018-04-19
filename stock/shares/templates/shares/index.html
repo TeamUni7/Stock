@@ -1,0 +1,222 @@
+<!-- Line Graph Using D3.js -->
+<!doctype html>
+<html lang="en">
+  <head>
+    {% load staticfiles %}
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <script src="https://d3js.org/d3.v3.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <title>Bar Graph</title>
+    <style>
+      .svg {
+        margin-top: 50px;
+        background: #f4f4f4;
+        border: 2px solid black
+      }
+      .line {
+        fill: none;
+        stroke: steelblue;
+        stroke-width: 2px;
+      }
+      .axis path,
+      .axis line {
+          fill: none;
+          stroke: black;
+          stroke-width: 2px;
+          shape-rendering: crispEdges;
+      }
+      .axis text {
+          font-family: sans-serif;
+          font-size: 11px;
+          font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1 style="text-align: center">Line Graph | D3.js</h1>
+    </header>
+      <div class="container">
+        <h3>Add Values</h3>
+        <form id="myForm" class="row" name="myForm" onsubmit="return validate()">
+          <div class="col-2">
+            <label for="x">x:</label>
+            <input class="form-control form-control-sm" type="text" placeholder="x" id="x">
+          </div>
+          <div class="col-2">
+            <label for="y">y: </label>
+            <input class="form-control form-control-sm" type="text" placeholder="y" id="y">
+          </div>
+          <div class="col-2">
+            <br>
+            <button type="submit" class="btn btn-primary">Submit</button>
+          </div>
+        </form>
+      </div>
+    <div class="container graph" style="text-align: center"></div>
+
+    <script type="text/javascript">
+      function validate() { // Form Validation.
+        if(isNaN(document.myForm.x.value) || (document.myForm.x.value == "")) {
+          alert( "Please provide numerical value of x" );
+          document.myForm.x.focus() ;
+          return false;
+        }
+
+        if(isNaN(document.myForm.y.value) || (document.myForm.y.value == "")) {
+          alert( "Please provide value of y" );
+          document.myForm.y.focus() ;
+          return false;
+        }
+        alert("DONE!!!");
+        return( true );
+        }
+
+      function validate1() {
+        if(isNaN(document.myForm.x.value) || (document.myForm.x.value == "")) {
+          return false;
+        }
+
+        if(isNaN(document.myForm.y.value) || (document.myForm.y.value == "")) {
+          return false;
+        }
+        return( true );
+      }
+      function graph(arr) { // Creates Line Graph.
+          console.log("In Graph");
+          console.log(arr);
+          var no = arr.length;
+          console.log(no);
+          $(".graph").html(''); // First, Clear Already There code.
+          var margin = {
+              top: 20,
+              bottom: 30,
+              left: 30,
+              right: 20
+          };
+
+          var height = 500, width = 500;
+
+          var svg = d3.select(".graph")
+              .append("svg")
+              .attr({
+                  "width": width,
+                  "height": height,
+                  "class": "svg"
+              })
+              .append("g")
+              .attr("transform", "translate(30, 20)");
+
+          height -= (margin.top + margin.bottom);
+          width -= (margin.left + margin.right);
+
+
+          var xScale = d3.scale.linear()
+              .domain([0, d3.max(arr, function (d) {
+                  return (d.x);
+              })])
+              .range([0, width]);
+
+          var yScale = d3.scale.linear()
+              .domain([0, d3.max(arr, function (d) {
+                  return (d.y);
+              })])
+              .range([height, 0]);
+
+          var valueline = d3.svg.line() // d attribute of path in line graph.
+              .x(function (d) {
+                  return xScale((d.x));
+              })
+              .y(function (d) {
+                  return yScale((d.y));
+              });
+
+          var lineGraph = svg.append("path") // Line Graph.
+              .attr("class", "line")
+              .attr("d", valueline(arr));
+
+          var xAxis = d3.svg.axis() // X Axis.
+              .scale(xScale)
+              .orient("bottom")
+              .ticks(10);
+
+          var yAxis = d3.svg.axis() // Y Axis.
+              .scale(yScale)
+              .orient("left")
+              .ticks(10);
+
+          svg.append("g")
+              .call(xAxis)
+              .attr("class", "axis")
+              .attr("transform", "translate(0, 450)");
+
+          svg.append("g")
+              .call(yAxis)
+              .attr("class", "axis");
+      }
+      $(document).ready(function() {
+          console.log("HERE");
+          var arr = [];
+          var jsonData;
+
+          var url = "{% static 'shares/users1.json' %}"; // url for jason file.
+
+          $.ajax({ // Loading json data
+            dataType: "json",
+            url: url,
+            async: false,
+            success: function(data){jsonData = data}
+          });
+          console.log(jsonData);
+
+          for(var i = 0; i < jsonData.length; i++) {
+            var temp = {
+              "x": Number(jsonData[i].x),
+              "y": Number(jsonData[i].y)
+            };
+            arr.push(temp);
+          }
+          graph(arr); // Creates Initial Graph.
+          var x, y;
+          $("#myForm").submit(function(e) { // Submit Form Event.
+              if(validate1() == true) { // If validated then,
+                  e.preventDefault(); // Prevents from refreshing page.
+                  x = $("input#x").val(); // x
+                  y= $("input#y").val(); // y
+                  document.getElementById("myForm").reset(); // Reset Form.
+                  alert("Form Submitted");
+                  x = Number(x);
+                  y = Number(y);
+                  console.log("X and Y teken", + x + " " + y);
+                  arr.push({ // Pushing it to arr.
+                      "x": x,
+                      "y": y
+                  });
+                  console.log("Pushed");
+                  console.log(arr);
+                  $.ajax({
+			              url: "update/",
+                    type: 'POST',
+                    data: { // Writing to json file.
+                        csrfmiddlewaretoken: "{{ csrf_token }}",
+                        data: arr
+                    },
+                    success: function(data){
+                        console.log("DONE!!!");
+                    },
+                    error: function(e){
+                        console.log(e);
+                    }
+                  });
+                  graph(arr); // Creating new Line Graph with addded values.
+              }
+        });
+      });
+
+    </script>
+
+    <!-- CDNs -->
+    </body>
+</html>

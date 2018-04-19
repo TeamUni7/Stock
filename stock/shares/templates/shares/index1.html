@@ -1,0 +1,602 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    {% load staticfiles %}
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <script src="https://d3js.org/d3.v3.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <title>Stock Predictor</title>
+    <style>
+      body {
+        margin-bottom: 500px;
+      }
+      .result, .result1 {
+        padding-left: 20px;
+        padding-top: 10px;
+      }
+      .svg {
+        margin-top: 20px;
+        background: #f4f4f4;
+        border: 1px solid black
+      }
+      .line {
+        fill: none;
+        stroke: blue;
+        stroke-width: 2px;
+      }
+      .line1 {
+        fill: none;
+        stroke: red;
+        stroke-width: 2px;
+      }
+      .line2 {
+        fill: none;
+        stroke: green;
+        stroke-width: 2px;
+      }
+      .line3 {
+        fill: none;
+        stroke: black;
+        stroke-width: 2px;
+      }
+      .axis path,
+      .axis line {
+          fill: none;
+          stroke: black;
+          stroke-width: 1px;
+          shape-rendering: crispEdges;
+      }
+      .axis text { <!-- Style for Axis of Graph -->
+          font-family: sans-serif;
+          font-size: 11px;
+          font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1 style="text-align: center">Stocks<p style="font-size: 20px"> SENSEX NIFTY NASDAQ GOLD</p></h1>
+    </header>
+
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-9" style="text-align: center">
+        </div>
+        <div class="col">
+          <form id="myForm" name="myForm">
+            <div class="form-group">
+              <label for="date">Date:</label>
+              <input class="form-control form-control-sm" type="date" id="date" min="2018-01-02">
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Predict NIFTY Value</button>
+          </form>
+          <p class="result">
+          </p>
+
+          <button class="btn btn-primary btn2">Live Stock Values</button>
+          <p class="result1">
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+
+    </div>
+
+    <script type="text/javascript">
+    //Begin
+    console.log("START");
+
+    // Different Formaters Used.
+    var	parseDate = d3.time.format("%d-%b-%y").parse;
+    var	parseDate1 = d3.time.format("%Y-%m-%d").parse;
+    var	formatDate = d3.time.format("%dth %B %Y");
+    var	formatDate1 = d3.time.format("%d-%b-%y");
+    var	formatDate2 = d3.time.format("%c");
+
+    //Global arr array
+    var arr = [];
+
+    //Date Variable
+    var date1;
+
+
+    // url for json file
+    var url = "{% static 'shares/jsonData1.json' %}";
+
+    // ajax call to load json data
+    $.ajax({
+      dataType: "json",
+      url: url,
+      async: false,
+      success: function(data){jsonData = data}
+    });
+
+    console.log(jsonData);
+
+    // Creating arr array.
+    for(var i = 0; i < jsonData.length; i++) {
+      var temp = {
+        "Date": parseDate(jsonData[i].Date),
+        "SENSEX": Number(jsonData[i].SENSEX),
+        "NIFTY": Number(jsonData[i].NIFTY),
+        "NASDAQ": Number(jsonData[i].NASDAQ),
+        "GOLD": Number(jsonData[i].GOLD)
+      };
+      arr.push(temp);
+    }
+
+    var no = arr.length;
+
+    // function to create graph
+    function graph() {
+        $(".container-fluid .col-9").html("");
+
+      no = arr.length;
+      $(".container-fluid .col-9").html("");
+      console.log("Arr is ");
+      console.log(arr);
+      var margin = {
+        top: 50,
+        bottom: 30,
+        left: 50,
+        right: 20
+      }
+
+      var height = 750, width = 1250;
+
+      // svg created.
+      var svg = d3.select(".container-fluid .col-9")
+        .append("svg")
+        .attr({
+          "width": width,
+          "height": height,
+          "class": "svg",
+        })
+        .append("g")
+        .attr("transform", "translate(" + margin.left + ", " + margin.top + ")");
+
+      height -= (margin.top + margin.bottom);
+      width -= (margin.left + margin.right);
+
+      // Text field added to the graph, 4 text fields added.
+      d3.select("svg").append("text")
+       .attr("x", 75)
+       .attr("y", 30)
+       .attr("stroke", "red")
+       .attr("fill", "red")
+       .text("SENSEX");;
+       d3.select("svg").append("text")
+        .attr("x", 350)
+        .attr("y", 30)
+        .attr("stroke", "black")
+        .attr("fill", "black")
+        .text("GOLD");;
+      d3.select("svg").append("text")
+       .attr("x", 150)
+       .attr("y", 30)
+       .attr("stroke", "blue")
+       .attr("fill", "blue")
+       .text("NIFTY");;
+     d3.select("svg").append("text")
+      .attr("x", 250)
+      .attr("y", 30)
+      .attr("stroke", "green")
+      .attr("fill", "green")
+      .text("NASDAQ");
+
+      // x and y scale.
+      var xScale = d3.time.scale()
+        .range([0, width])
+        .domain(d3.extent(arr, function(d) { return d.Date; }));
+
+      var yScale = d3.scale.linear()
+        .range([height, 0])
+        .domain([0, d3.max(arr, function(d) { return d.SENSEX; })]);
+
+      // x and y axis.
+      var xAxis = d3.svg.axis()
+        .scale(xScale)
+        .orient("bottom")
+        .ticks(25);
+
+      var yAxis = d3.svg.axis()
+        .scale(yScale)
+        .orient("left")
+        .ticks(25);
+
+      // Line for different stocks.
+      var valuelineBSE = d3.svg.line()
+        .x(function(d) { return xScale(d.Date); })
+        .y(function(d) { return yScale(d.NIFTY); });
+
+      var valuelineNSE = d3.svg.line()
+        .x(function(d) { return xScale(d.Date); })
+        .y(function(d) { return yScale(d.SENSEX); });
+
+      var valuelineNASDAQ = d3.svg.line()
+        .x(function(d) { return xScale(d.Date); })
+        .y(function(d) { return yScale(d.NASDAQ); });
+
+      var valuelineGOLD = d3.svg.line()
+        .x(function(d) { return xScale(d.Date); })
+        .y(function(d) { return yScale(d.GOLD); });
+
+      // Appending line for different stocks.
+      var lineGraphBSE = svg.append("path")
+        .attr("class", "line")
+        .attr("d", valuelineBSE(arr));
+
+      var lineGraphNSE = svg.append("path")
+        .attr("class", "line1")
+        .attr("d", valuelineNSE(arr));
+
+      var lineGraphNASDAQ = svg.append("path")
+        .attr("class", "line2")
+        .attr("d", valuelineNASDAQ(arr));
+
+      var lineGraphGOLD = svg.append("path")
+        .attr("class", "line3")
+        .attr("d", valuelineGOLD(arr));
+
+      // Adding axis to the graph.
+      svg.append("g")
+        .call(xAxis)
+        .attr("class", "axis")
+        .attr("transform", "translate(0, " + height +")");
+
+      svg.append("g")
+        .call(yAxis)
+        .attr("class", "axis");
+    }
+    // Creating Initial Graph.
+    graph();
+
+    // Variables for Predictions.
+    var date_to_find="";
+     var DateArray=[];//date values
+     var SensexArray=[];//sensex values
+     var GoldArray=[];//sensex values
+     var NasdaqArray=[];//sensex values
+     var ExtrapolatedSensex;
+     var ExtrapolatedGold;
+     var ExtrapolatedNasdaq;
+     var predictedNIFTY;
+     var N=arr.length - 1;
+     var M=4;
+     var inv=[];
+     var trans=[];
+     var mul=[];
+     var temp=[];
+     var Y=[];
+     var X=[];
+     var beta=[];
+     var X_to_find=[];
+      for(var i=0;i<no;i++)
+        {
+            DateArray.push(days_in_between(arr[i].Date));
+        }//-------------------------------------------------------------------------------------changed-----------------//
+
+        // Variables in which scraped values will be stored.
+        var NIFTY, SENSEX, GOLD, NASDAQ;
+
+        // Scrap Function (same as we did before).
+        function scrap() {
+          $.get("http://www.moneycontrol.com/indian-indices/nifty-50-9.html", function(data) {
+            var s = data;
+            var e = "<div>" + s + "</div>";
+            NIFTY = $("#mc_mainWrapper div.PA10 div.FL div:nth-child(24) div.FL.gr_35 strong", e).html();
+          });
+          $.get("http://www.moneycontrol.com/sensex/bse/sensex-live", function(data) {
+            var s = data;
+            var e = "<div>" + s + "</div>";
+            SENSEX = $("#mc_mainWrapper div.PA10 div.FL div:nth-child(24) div.FL.gr_35 strong", e).html();
+          });
+          $.getJSON('http://www.whateverorigin.org/get?url=' + encodeURIComponent('http://goldratecity.com/goldrate-in-mumbai.php?page=1&fromDate=&toDate=') + '&callback=?', function(data){
+            var s = data["contents"];
+            //console.log(s);
+            var e = "<div>" + s + "</div>";
+            GOLD = $("div.wrap div.main-table div.col-full.max-wid div.col-mid table tbody tr:nth-child(3) td:nth-child(3)", e).text();
+            var temp = "";
+            for(i = 4; i < GOLD.length; i++) {
+              temp += GOLD[i];
+            }
+            var no = Number(temp);
+            no *= 10;
+            GOLD = String(no);
+          });
+          $.getJSON('http://www.whateverorigin.org/get?url=' + encodeURIComponent('http://www.bbc.com/news/business/markets/us/nasdaq_ixic') + '&callback=?', function(data){
+            var s = data["contents"];
+            var e = "<div>" + s + "</div>";
+            NASDAQ = $("div.gel-paragon.nw-c-md-market-summary__value", e).html();
+            //NASDAQ = $("#markets_index_data_panel > div > span.markets-index-data__value", e).text();
+
+            //var temp = "";
+
+            //for(var i = 12; i < NASDAQ.length; i++) {
+            //  temp += NASDAQ[i];
+            //}
+            //NASDAQ = temp;
+            //console.log("Temp is " + temp);
+          });
+        }
+
+        // Prediction Functions.
+        function days_in_between(str)
+        {
+            var date1 = new Date(str);
+            var date2 = new Date("1-Jan-18");
+            var timeDiff = Math.abs(date2.getTime() - date1.getTime());
+            var diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
+           return diffDays;
+        }
+        function LinearRegression(array1,array2) {
+            var x_bar=0.0;
+            var y_bar=0.0;
+            for(var i=0;i<N;i++)
+            {
+                x_bar+=array1[i];
+                y_bar+=array2[i];
+            }
+            x_bar/=N;
+            y_bar/=N;
+            var numerator=0.0;
+            var denominator=0.0;
+            for(var i=0;i<N;i++)
+            {
+                numerator+=((array1[i]-x_bar)*(array2[i]-y_bar));
+                denominator+=((array1[i]-x_bar)*(array1[i]-x_bar));
+            }
+            var beta1=numerator/denominator;
+            var beta0=y_bar-(beta1*x_bar);
+            var days_ahead=days_in_between(date_to_find);
+            var ans=beta0 + (beta1*days_ahead);
+            return ans;
+        }
+        function Extrapolation() {
+            var ans=0;
+            console.log('Array arr:');
+            console.log(arr);
+
+            for(var i=0;i<N;i++)
+            {
+                SensexArray.push(arr[i].SENSEX);
+                GoldArray.push(arr[i].GOLD);
+                NasdaqArray.push(arr[i].NASDAQ);
+            }
+            console.log(SensexArray);
+            ExtrapolatedSensex=LinearRegression(DateArray,SensexArray);
+            ExtrapolatedGold=LinearRegression(DateArray,GoldArray);
+            ExtrapolatedNasdaq=LinearRegression(DateArray,NasdaqArray);
+             X_to_find[0][0]=1;
+              X_to_find[0][1]=ExtrapolatedSensex;
+              X_to_find[0][2]=ExtrapolatedGold;
+              X_to_find[0][3]=ExtrapolatedNasdaq;
+            console.log(ExtrapolatedGold+'<-- ExtrapolatedGold');
+            console.log(ExtrapolatedNasdaq+'<--ExtrapolatedNasdaq');
+            console.log(ExtrapolatedSensex+'<--ExtrapolatedSensex');
+        }
+        function initialise_the_arrays()
+    		{
+    			var i,j;
+    			for (i=0;i<123;i++)
+    			{
+    				 inv[i]=[];
+    				 trans[i]=[];
+    				 mul[i]=[];
+    				 temp[i]=[];
+    				 Y[i]=[];
+    				 X[i]=[];
+    				 beta[i]=[];
+    				 X_to_find[i]=[];
+    			}
+    			for(i=0;i<123;i++)
+    			{
+    				for(j=0;j<123;j++)
+    				{
+    					 inv[i].push(0);
+    					 trans[i].push(0);
+    					 mul[i].push(0);
+    					 temp[i].push(0);
+    					 Y[i].push(0);
+    					 X[i].push(0);
+    					 beta[i].push(0);
+    					 X_to_find[i].push(0);
+    				}
+    			}
+    		}
+    		function Taking_Values_Of_Independent_Variables()
+    		{
+    			var i,j;
+    			for(i = 0; i < N; i++) {
+            X[i][0] = 1;
+            X[i][1] = arr[i].SENSEX;
+            X[i][2] = arr[i].GOLD;
+            X[i][3] = arr[i].NASDAQ;
+            Y[i][0] = arr[i].NIFTY;
+          }
+          console.log(N);
+            Extrapolation();
+    		}
+        // Main Predict Function.
+        function predict() {
+          console.log("PREDICT!!!");
+          function transpose_of_matrix(array1,row,col)
+      		{
+      			var i,j;
+      			 for(i=0;i<row;i++)
+      		    {
+      		        for(j=0;j<col;j++)
+      		        {
+      		            trans[j][i]=array1[i][j];
+      		        }
+      		    }
+      		}
+      		function multiplication_of_matrix(array1,array2,row1,col2,row2)
+      		{
+      			var i,j,k;
+      			for(i=0;i<row1;i++)
+      			{
+      			    for(j=0;j<col2;j++)
+      		 	   {
+      		 	       var  temp=0;
+      		  	      for(k=0;k<row2;k++)
+      		  	      {
+      		 	           temp+=array1[i][k]*array2[k][j];
+      		  	      }
+      			      mul[i][j]=temp;
+      			    }
+      			}
+      		}
+      		function inverse_of_matrix(arr,row)
+      		{
+      			var i,j,k;
+      		    for(i = 0; i < row; i++)
+      		    {
+      		        for(j = row; j < 2*row; j++)
+      		        {
+      		            if(i==(j-row))
+      		                arr[i][j] = 1.0;
+      		            else
+      		                arr[i][j] = 0.0;
+      		        }
+      		    }
+      		    for(i = 0; i < row; i++)
+      		    {
+      		        for(j = 0; j < row; j++)
+      		        {
+      		            if(i!=j)
+      		            {
+      		                var ratio = arr[j][i]/arr[i][i];
+      		                for(k = 0; k < 2*row; k++)
+      		                    arr[j][k] -= ratio * arr[i][k];
+      		            }
+      		        }
+      		    }
+      		    for(i = 0; i < row; i++)
+      		    {
+      		        var a = arr[i][i];
+      		        for(j = 0; j < 2*row; j++)
+      		        {
+      		            arr[i][j] /= a;
+      		            temp[i][j]=arr[i][j];
+      		        }
+      		    }
+      		    for(i = 0; i < row; i++)
+      		    {
+      		        var k=0;
+      		        for(j = row; j < 2*row; j++)
+      		        {
+      		            inv[i][k]=temp[i][j];
+      		            k++;
+      		        }
+      		    }
+      		}
+          console.log(DateArray);
+    			initialise_the_arrays();
+    			Taking_Values_Of_Independent_Variables();
+    			transpose_of_matrix(X,N,M);
+    			multiplication_of_matrix(trans,X,M,M,N);
+    			inverse_of_matrix(mul,M);
+    			multiplication_of_matrix(inv,trans,M,N,M);
+    			multiplication_of_matrix(mul,Y,M,1,N);
+    			for(var i=0;i<M;i++) {
+            beta[i][0]=mul[i][0];
+    			}
+    			multiplication_of_matrix(X_to_find,beta,1,1,M);
+          var formatDecimal = d3.format(".4f");
+          predictedNIFTY = mul[0][0];
+          date1 = parseDate1(date1);
+          console.log("HERE " + date1);
+          $(".result").html("<h5>Predicted Values for:</h5><h5>Date: "+ formatDate(date1) + "</h5>" + "<h5>NIFTY: " + formatDecimal(predictedNIFTY) + "</h5>" + "<h5>SENSEX: " + formatDecimal(ExtrapolatedSensex) + "</h5>" + "<h5>NASDAQ: " + formatDecimal(ExtrapolatedNasdaq) + "</h5>" + "<h5>GOLD: " + formatDecimal(ExtrapolatedGold) + "</h5>");
+        }
+
+        // Event for Live Scraping.
+        $(".btn2").click(function () {
+          console.log("CLICKED");
+          scrap();
+          setTimeout(function(){
+            $(".result1").html("<h5>Date: "+ formatDate(date) + "</h5>" + "<h5>NIFTY: " + NIFTY + "</h5>" + "<h5>SENSEX: " + SENSEX + "</h5>" + "<h5>NASDAQ: " + NASDAQ + "</h5>" + "<h5>GOLD: " + GOLD + "</h5>");
+          }, 15000);
+        });
+
+        // Event for prediction of a date.
+        $("#myForm").submit(function(e) {
+          e.preventDefault(); // prevents from reloading of page after form submition.
+          var date = $("#date").val(); // Date for which we extrapolate.
+          date1 = date;
+          document.getElementById("myForm").reset();
+          date = parseDate1(date);
+          date = formatDate1(date); // date in desired string format as needed. ex: "15-04-18"
+          date_to_find=date;
+          console.log(date_to_find);
+          console.log(typeof(date_to_find));
+          predict();
+        });
+
+      // Background event for scarping value at a specified time.
+      setInterval(function() {
+        var currTime = new Date(); // Current Time
+        console.log(currTime);
+        var hr = currTime.getHours(); // Hour part
+        var min = currTime.getMinutes(); // Minutes part.
+        var date = formatDate1(currTime);
+        if(hr == 19 && min == 55) { // This example scraps value at 5:12 pm
+          console.log("Writing New Value");
+          var date = formatDate1(currTime);
+          console.log("Date is " + date);
+          scrap(); // We scrap values.
+          setTimeout(function() {
+            console.log("INNER");
+            var temp = {
+              "Date": currTime,
+              "SENSEX": Number(SENSEX),
+              "NIFTY": Number(NIFTY),
+              "NASDAQ": Number(NASDAQ),
+              "GOLD": Number(GOLD)
+            }
+            arr.push(temp); // add it to arr
+            console.log("Pushed");
+            console.log(arr);
+            var arr1 = []; // Create temp array for writing it into file.
+            for(i = 0; i < arr.length; i++) {
+              var temp = {
+                "Date": formatDate1(arr[i].Date),
+                "SENSEX": Number(arr[i].SENSEX),
+                "NIFTY": Number(arr[i].NIFTY),
+                "NASDAQ": Number(arr[i].NASDAQ),
+                "GOLD": Number(arr[i].GOLD)
+              }
+              arr1.push(temp);
+            }
+            console.log("Arr1 is ");
+            console.log(arr1);
+            // Ajax call for writing to file.
+            $.ajax({
+              url: "update1/",
+              type: 'POST',
+              data: {
+                  csrfmiddlewaretoken: "{{ csrf_token }}",
+                  data: arr1 // Using that new created array.
+              },
+              success: function(data){
+                  console.log("DONE!!!");
+              },
+              error: function(e){
+                  console.log(e);
+              }
+            });
+            console.log("Calling Graph");
+            $(".container-fluid .col-9").html("<h1>Updating, Please Wait ...</h1>");
+            setTimeout(function () {
+              graph(); // Creating New Graph after a timeout of 3 secs.
+            }, 3000);
+          }, 30000);
+        }
+      }, 60000);
+
+    </script>
+  </body>
+</html>
